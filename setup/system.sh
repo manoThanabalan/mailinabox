@@ -43,37 +43,37 @@ chmod g-w /etc /etc/default /usr
 # See https://www.digitalocean.com/community/tutorials/how-to-add-swap-on-ubuntu-14-04
 # for reference
 
-SWAP_MOUNTED=$(cat /proc/swaps | tail -n+2)
-SWAP_IN_FSTAB=$(grep "swap" /etc/fstab || /bin/true)
-ROOT_IS_BTRFS=$(grep "\/ .*btrfs" /proc/mounts || /bin/true)
-TOTAL_PHYSICAL_MEM=$(head -n 1 /proc/meminfo | awk '{print $2}' || /bin/true)
-AVAILABLE_DISK_SPACE=$(df / --output=avail | tail -n 1)
-if
-	[ -z "$SWAP_MOUNTED" ] &&
-	[ -z "$SWAP_IN_FSTAB" ] &&
-	[ ! -e /swapfile ] &&
-	[ -z "$ROOT_IS_BTRFS" ] &&
-	[ $TOTAL_PHYSICAL_MEM -lt 1900000 ] &&
-	[ $AVAILABLE_DISK_SPACE -gt 5242880 ]
-then
-	echo "Adding a swap file to the system..."
+# SWAP_MOUNTED=$(cat /proc/swaps | tail -n+2)
+# SWAP_IN_FSTAB=$(grep "swap" /etc/fstab || /bin/true)
+# ROOT_IS_BTRFS=$(grep "\/ .*btrfs" /proc/mounts || /bin/true)
+# TOTAL_PHYSICAL_MEM=$(head -n 1 /proc/meminfo | awk '{print $2}' || /bin/true)
+# AVAILABLE_DISK_SPACE=$(df / --output=avail | tail -n 1)
+# if
+# 	[ -z "$SWAP_MOUNTED" ] &&
+# 	[ -z "$SWAP_IN_FSTAB" ] &&
+# 	[ ! -e /swapfile ] &&
+# 	[ -z "$ROOT_IS_BTRFS" ] &&
+# 	[ $TOTAL_PHYSICAL_MEM -lt 1900000 ] &&
+# 	[ $AVAILABLE_DISK_SPACE -gt 5242880 ]
+# then
+# 	echo "Adding a swap file to the system..."
 
-	# Allocate and activate the swap file. Allocate in 1KB chuncks
-	# doing it in one go, could fail on low memory systems
-	dd if=/dev/zero of=/swapfile bs=1024 count=$[1024*1024] status=none
-	if [ -e /swapfile ]; then
-		chmod 600 /swapfile
-		hide_output mkswap /swapfile
-		swapon /swapfile
-	fi
+# 	# Allocate and activate the swap file. Allocate in 1KB chuncks
+# 	# doing it in one go, could fail on low memory systems
+# 	dd if=/dev/zero of=/swapfile bs=1024 count=$[1024*1024] status=none
+# 	if [ -e /swapfile ]; then
+# 		chmod 600 /swapfile
+# 		hide_output mkswap /swapfile
+# 		swapon /swapfile
+# 	fi
 
-	# Check if swap is mounted then activate on boot
-	if swapon -s | grep -q "\/swapfile"; then
-		echo "/swapfile   none    swap    sw    0   0" >> /etc/fstab
-	else
-		echo "ERROR: Swap allocation failed"
-	fi
-fi
+# 	# Check if swap is mounted then activate on boot
+# 	if swapon -s | grep -q "\/swapfile"; then
+# 		echo "/swapfile   none    swap    sw    0   0" >> /etc/fstab
+# 	else
+# 		echo "ERROR: Swap allocation failed"
+# 	fi
+# fi
 
 # ### Add PPAs.
 
@@ -213,22 +213,22 @@ fi
 # hardware entropy to get going, by drawing from /dev/random. haveged makes this
 # less likely to stall for very long.
 
-echo Initializing system random number generator...
-dd if=/dev/random of=/dev/urandom bs=1 count=32 2> /dev/null
+# echo Initializing system random number generator...
+# dd if=/dev/random of=/dev/urandom bs=1 count=32 2> /dev/null
 
-# This is supposedly sufficient. But because we're not sure if hardware entropy
-# is really any good on virtualized systems, we'll also seed from Ubuntu's
-# pollinate servers:
+# # This is supposedly sufficient. But because we're not sure if hardware entropy
+# # is really any good on virtualized systems, we'll also seed from Ubuntu's
+# # pollinate servers:
 
-pollinate  -q -r
+# pollinate  -q -r
 
-# Between these two, we really ought to be all set.
+# # Between these two, we really ought to be all set.
 
-# We need an ssh key to store backups via rsync, if it doesn't exist create one
-if [ ! -f /root/.ssh/id_rsa_miab ]; then
-	echo 'Creating SSH key for backup…'
-	ssh-keygen -t rsa -b 2048 -a 100 -f /root/.ssh/id_rsa_miab -N '' -q
-fi
+# # We need an ssh key to store backups via rsync, if it doesn't exist create one
+# if [ ! -f /root/.ssh/id_rsa_miab ]; then
+# 	echo 'Creating SSH key for backup…'
+# 	ssh-keygen -t rsa -b 2048 -a 100 -f /root/.ssh/id_rsa_miab -N '' -q
+# fi
 
 # ### Package maintenance
 #
@@ -246,28 +246,28 @@ EOF
 # Various virtualized environments like Docker and some VPSs don't provide #NODOC
 # a kernel that supports iptables. To avoid error-like output in these cases, #NODOC
 # we skip this if the user sets DISABLE_FIREWALL=1. #NODOC
-if [ -z "${DISABLE_FIREWALL:-}" ]; then
-	# Install `ufw` which provides a simple firewall configuration.
-	apt_install ufw
+# if [ -z "${DISABLE_FIREWALL:-}" ]; then
+# 	# Install `ufw` which provides a simple firewall configuration.
+# 	apt_install ufw
 
-	# Allow incoming connections to SSH.
-	ufw_allow ssh;
+# 	# Allow incoming connections to SSH.
+# 	ufw_allow ssh;
 
-	# ssh might be running on an alternate port. Use sshd -T to dump sshd's #NODOC
-	# settings, find the port it is supposedly running on, and open that port #NODOC
-	# too. #NODOC
-	SSH_PORT=$(sshd -T 2>/dev/null | grep "^port " | sed "s/port //") #NODOC
-	if [ ! -z "$SSH_PORT" ]; then
-	if [ "$SSH_PORT" != "22" ]; then
+# 	# ssh might be running on an alternate port. Use sshd -T to dump sshd's #NODOC
+# 	# settings, find the port it is supposedly running on, and open that port #NODOC
+# 	# too. #NODOC
+# 	SSH_PORT=$(sshd -T 2>/dev/null | grep "^port " | sed "s/port //") #NODOC
+# 	if [ ! -z "$SSH_PORT" ]; then
+# 	if [ "$SSH_PORT" != "22" ]; then
 
-	echo Opening alternate SSH port $SSH_PORT. #NODOC
-	ufw_allow $SSH_PORT #NODOC
+# 	echo Opening alternate SSH port $SSH_PORT. #NODOC
+# 	ufw_allow $SSH_PORT #NODOC
 
-	fi
-	fi
+# 	fi
+# 	fi
 
-	ufw --force enable;
-fi #NODOC
+# 	ufw --force enable;
+# fi #NODOC
 
 # ### Local DNS Service
 
